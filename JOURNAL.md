@@ -108,7 +108,7 @@ And the summary table:
 
 I want to make a small box, the smalest possible with all of the componment. That box will be print in PLA, on a Bambulab A1. So the maximum size is 25,6cm by 25,6cm. This enclosure must therefore house a small 40x40mm fan, two XLR ports and the necessary circuitry to operate them, an Art-Net port and the necessary circuitry to operate it, as well as a USB-C port—already integrated into the ESP32, which must also be inside the enclosure.
 
-I'm now making the box on Fusion 360, with the dimension of the componment. Here's what it's look like: (You can check the V1 file [just here](3D-files/DMX Unit - V1.stl).)
+I'm now making the box on Fusion 360, with the dimension of the componment. Here's what it's look like: (You can check the V1 file [just here](3D-files/DMX%20Unit%20-%20V1.stl).)
 
 ![First version](images/img-2.png)
 
