@@ -103,3 +103,21 @@ And the summary table:
 | **XLR #2 (Universe 2)** | Pin 3 (Data +) | **A** (MAX485 #2) |
 
 **Time spent today:** ~2,5h
+
+# Day 2: 3D conception and other stuff
+
+I want to make a small box, the smalest possible with all of the componment. That box will be print in PLA, on a Bambulab A1. So the maximum size is 25,6cm by 25,6cm. This enclosure must therefore house a small 40x40mm fan, two XLR ports and the necessary circuitry to operate them, an Art-Net port and the necessary circuitry to operate it, as well as a USB-C port—already integrated into the ESP32, which must also be inside the enclosure.
+
+I'm now making the box on Fusion 360, with the dimension of the componment. Here's what it's look like: (You can check the V1 file [just here](3D-files/DMX Unit - V1.stl).)
+
+![First version](images/img-2.png)
+
+A XLR connector is 1,5cm wide. We have 2, and between those two, I made it 5cm wide. On top of that, there is a 2 cm gap between the edges on the right and left and the XLR connectors. Adding all that up, you end up with a box that is 12 cm wide. It fits on the Bambu Lab A1 build plate.
+
+As for the length, the ESP-32 is 5,5cm long, and the MAX485 is 4,5. The Ethernet module is litlle, and don't need to be add to the calculation. But, there's the the length of the XLR connectors, and the addition of extra space to make assembly easier. So the box will be 17cm.
+
+Regarding the height of the box, the main consideration is ease of construction. The box will therefore be 10 cm high.
+
+So, to sum up, the box measures 12x17x10. It fits perfectly on the Bambu Lab A1 build plate! I think I'm going to spend a lot of time on 3D, simply because I'm just starting out with modeling.
+
+**Time spent today:** ~3h
