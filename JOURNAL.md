@@ -120,4 +120,25 @@ Regarding the height of the box, the main consideration is ease of construction.
 
 So, to sum up, the box measures 12x17x10. It fits perfectly on the Bambu Lab A1 build plate! I think I'm going to spend a lot of time on 3D, simply because I'm just starting out with modeling.
 
+Regarding airflow, I decided to mount the 40x40mm fan inside the enclosure—on the lid, directly above the ESP-32—to improve cooling and save space. Near the bottom, along the two 17cm-long sides, there will be a grille of some sort to allow air to exit the box. Even though hot air rises, my experience has taught me that it is better to direct the airflow straight onto the ESP to cool it down.
+
+To close the box, I am going to install heat-set threaded inserts that will allow the lid to be screwed on.
+
+Here is a list of items to buy for the box, other than the electronic components:
+
+| Components | Quantity | Price |
+| --- | --- | --- |
+| [heat-set threaded inserts](https://fr.aliexpress.com/item/1005007640664497.html?spm=a2g0o.productlist.main.1.778csXo5sXo5aw&algo_pvid=30feabc0-38ea-4b05-86c4-2357c562b8c2&algo_exp_id=30feabc0-38ea-4b05-86c4-2357c562b8c2-0&pdp_ext_f=%7B%22order%22%3A%225083%22%2C%22spu_best_type%22%3A%22price%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21EUR%211.60%211.59%21%21%2112.16%2112.16%21%4021613ab217889777444728314e0e3d%2112000041610082721%21sea%21FR%218054027548%21X%211%210%21n_tag%3A-29919%3Bd%3A8484f755%3Bm03_new_user%3A-29895&curPageLogUid=nZzh1hYDuUu2&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A1005007640664497%7C_p_origin_prod%3A) | 4 | 1,86$ |
+| [M2 metric screws](https://fr.aliexpress.com/item/32810852732.html?spm=a2g0o.productlist.main.25.7b72WZI7WZI71b&algo_pvid=a52b5964-ae35-4c25-88f5-7672ea9b0567&algo_exp_id=a52b5964-ae35-4c25-88f5-7672ea9b0567-24&pdp_ext_f=%7B%22order%22%3A%2238681%22%2C%22spu_best_type%22%3A%22price%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21EUR%210.93%210.93%21%21%211.06%211.06%21%400b88a96117889781167748255e0d67%2112000037550700828%21sea%21FR%218054027548%21X%211%210%21n_tag%3A-29919%3Bd%3A8484f755%3Bm03_new_user%3A-29895&curPageLogUid=yqNchI8doQay&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A32810852732%7C_p_origin_prod%3A) | 4 | 1,54$ |
+| [40x40mm fan](https://fr.aliexpress.com/item/1005006212685458.html?spm=a2g0o.productlist.main.9.19c91dabZlCLcX&algo_pvid=c5dde0a6-1d89-4d21-a38d-668a8cb81afe&algo_exp_id=c5dde0a6-1d89-4d21-a38d-668a8cb81afe-8&pdp_ext_f=%7B%22order%22%3A%22249%22%2C%22spu_best_type%22%3A%22price%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21EUR%212.76%212.76%21%21%213.14%213.14%21%400b15831117889782436123742e0df0%2112000036302788983%21sea%21FR%218054027548%21X%211%210%21n_tag%3A-29919%3Bd%3A8484f755%3Bm03_new_user%3A-29895&curPageLogUid=smatY7d7R5pJ&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A1005006212685458%7C_p_origin_prod%3A) | 1 | 3,21$ |
+| [2N2222 Transistor](https://fr.aliexpress.com/item/1005010473134376.html?spm=a2g0o.productlist.main.14.6edffnUbfnUbFK&algo_pvid=9c89de3c-24df-4041-b67a-93f5c3d7e74d&algo_exp_id=9c89de3c-24df-4041-b67a-93f5c3d7e74d-13&pdp_ext_f=%7B%22order%22%3A%22124%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21EUR%211.26%211.27%21%21%211.43%211.44%21%40210389a017889784226188831e0e94%2112000059797611860%21sea%21FR%218054027548%21X%211%210%21n_tag%3A-29919%3Bd%3A8484f755%3Bm03_new_user%3A-29895&curPageLogUid=Km86xQt6iFVC&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A1005010473134376%7C_p_origin_prod%3A) | 1 | 1,55$ |
+| [1 kΩ resistor](https://fr.aliexpress.com/item/1005007010335100.html?spm=a2g0o.productlist.main.2.523edbe8tuC53K&algo_pvid=eab16429-cd6a-4887-bafe-4d5f768fbbed&algo_exp_id=eab16429-cd6a-4887-bafe-4d5f768fbbed-1&pdp_ext_f=%7B%22order%22%3A%227875%22%2C%22spu_best_type%22%3A%22price%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21EUR%211.13%211.13%21%21%218.58%218.58%21%40210384a717889787428548103e0d2e%2112000039049464817%21sea%21FR%218054027548%21X%211%210%21n_tag%3A-29919%3Bd%3A8484f755%3Bm03_new_user%3A-29895&curPageLogUid=Rd7q4RmfGcL3&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A1005007010335100%7C_p_origin_prod%3A) | 1 | 1,59$ |
+
+
+To run the fan, you need to add a 2N2222 transistor and a 1 kΩ resistor. So, I updated the ESP-32 wiring diagram with all that.
+
+Now, here are the changes to the 3D model: (You can check the V2 file [just here](3D-files/DMX%20Unit%20-%20V2.stl).)
+
+![Second version](images/img-3.png)
+
 **Time spent today:** ~3h
