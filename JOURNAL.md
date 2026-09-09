@@ -30,7 +30,7 @@ I then drew the wiring diagram showing the connections between the components. H
 
 And the summary table:
 
-### ESP32-S3 (S3-N16R8)
+**ESP32-S3 (S3-N16R8)**
 
 | ESP32-S3 Pin | Connected Component | Component Pin |
 | :--- | :--- | :--- |
@@ -47,9 +47,7 @@ And the summary table:
 | **GPIO 17** | MAX485 #1 | DI |
 | **GPIO 18** | MAX485 #2 | DI |
 
----
-
-### W5500 Mini (Top view, RJ45 facing down)
+**W5500 Mini (Top view, RJ45 facing down)**
 
 | Row | Pin | Signal | ESP32-S3 Connection |
 | :--- | :--- | :--- | :--- |
@@ -64,9 +62,8 @@ And the summary table:
 | **Right (J2)** | 4 | **NC** | *Not connected* |
 | **Right (J2)** | 5 (Bottom) | **NC** | *Not connected* |
 
----
 
-### MAX485 Module #1 (DMX Universe 1)
+**MAX485 Module #1 (DMX Universe 1)**
 
 | MAX485 #1 Pin | Connection |
 | :--- | :--- |
@@ -79,9 +76,8 @@ And the summary table:
 | **A** | Pin 3 / DMX+ (XLR #1) |
 | **B** | Pin 2 / DMX- (XLR #1) |
 
----
 
-### MAX485 Module #2 (DMX Universe 2)
+**MAX485 Module #2 (DMX Universe 2)**
 
 | MAX485 #2 Pin | Connection |
 | :--- | :--- |
@@ -94,9 +90,8 @@ And the summary table:
 | **A** | Pin 3 / DMX+ (XLR #2) |
 | **B** | Pin 2 / DMX- (XLR #2) |
 
----
 
-### 3-Pin XLR Connectors
+**3-Pin XLR Connectors**
 
 | XLR Connector | XLR Pin | Connection |
 | :--- | :--- | :--- |
