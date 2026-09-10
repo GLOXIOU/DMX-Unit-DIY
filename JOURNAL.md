@@ -228,10 +228,10 @@ XLR #2 (Universe 2) | Pin 3 (Data +) | A (MAX485 #2)
 
 Fan 40x40mm
 
-Fan Pin | Connection
---- | ---
-+ | 5Vin (ESP32-S3)
-- | Collector (2N2222)
+| Fan Pin | Connection | 
+| --- | --- |
+| + | 5Vin (ESP32-S3) |
+| - | Collector (2N2222) |
 
 
 2N2222
@@ -241,5 +241,7 @@ Fan Pin | Connection
 Base | GPIO 6 through 1kΩ resistor
 Collector | Fan -
 Emitter | GND
+
+The RJ45 connector is tricky because, since it's the mini version, the port labels aren't printed on the PCB. So, I asked an LLM about the pinout.
 
 **Time spent today::** ~2h
