@@ -102,7 +102,7 @@ And the summary table:
 | **XLR #2 (Universe 2)** | Pin 2 (Data -) | **B** (MAX485 #2) |
 | **XLR #2 (Universe 2)** | Pin 3 (Data +) | **A** (MAX485 #2) |
 
-**Time spent today:** ~2,5h
+**Time spent today:** ~3h
 
 # Day 2: 3D conception and other stuff
 
@@ -112,7 +112,7 @@ I'm now making the box on Fusion 360, with the dimension of the componment. Here
 
 ![First version](images/img-2.png)
 
-A XLR connector is 1,5cm wide. We have 2, and between those two, I made it 5cm wide. On top of that, there is a 2 cm gap between the edges on the right and left and the XLR connectors. Adding all that up, you end up with a box that is 12 cm wide. It fits on the Bambu Lab A1 build plate.
+An XLR connector is 1.6 cm wide. We have 2, and between those two centres, there is a 6 cm gap . On top of that, there is a 3 cm gap  between the outer edges (right and left) and the centres of the XLR connectors. Adding all that up, you end up with a box that is 12 cm wide . It fits on the Bambu Lab A1 build plate.
 
 As for the length, the ESP-32 is 5,5cm long, and the MAX485 is 4,5. The Ethernet module is litlle, and don't need to be add to the calculation. But, there's the the length of the XLR connectors, and the addition of extra space to make assembly easier. So the box will be 17cm.
 
@@ -137,13 +137,29 @@ Here is a list of items to buy for the box, other than the electronic components
 
 To run the fan, you need to add a 2N2222 transistor and a 1 kΩ resistor. So, I need to updated the ESP-32 wiring diagram with all that. I also need to changes the 3D model, with the cover and all the wholes.
 
-**Time spent today:** ~3h
+**Time spent today:** ~3,5h
 
 # Day 3: Continue the 3D model and the ESP-32 wiring diagram
 
 I started by updating the 3D model: (You can check the V2 file [just here](3D-files/DMX%20Unit%20-%20V2.stl).)
 
-![Second version](images/img-3.png)
+Here are the cotations for the output pannel, in the front of the box:
+
+![Front pannel](images/img-4.png)
+
+And it's 3D version (with a litlle text):
+
+![Front pannel](images/img-5.png)
+
+That is the back pannel, with just the hole for the ESP32-S3 (I made it generously sized for ease of use):
+
+![Back pannel](images/img-6.png)
+
+I’ve also made a lid. All that’s left is to make the mounts for the components and the lid itself. I also need to make the ventilation grilles on both sides, but that's very simple to do. I apologize for the quality of the 3D models, I hate modeling, so I kept it as simple as possible so I could spend time on what I enjoy more !
+
+![The lid](images/img-7.png)
+
+To secure the components, I would use cable ties with the mounts I've made, and for the fan, glue will do the trick.
 
 And the I finished the wiring diagram, wich normally is the final version:
 
@@ -246,4 +262,4 @@ The RJ45 connector is tricky because, since it's the mini version, the port labe
 
 Now that I've done that, all that's left is to finish the 3D model, write the full code, and create the readme. I think the modeling will take the longest. I also need to put together the complete BOM, including all prices and links.
 
-**Time spent today::** ~2h
+**Time spent today::** ~5h
