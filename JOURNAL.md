@@ -151,4 +151,95 @@ And the I finished the wiring diagram, with normally is the final version:
 
 And I also updated the connection chart, so here is it:
 
-**Time spent today::** ~1h
+ESP32-S3 (S3-N16R8)
+
+ESP32-S3 Pin | Connected Component | Component Pin
+--- | --- | ---
+3V3 | W5500 Mini | 3.3V (J1, Pin 1)
+GND | W5500 Mini / MAX485 #1 / MAX485 #2 / XLR #1 / XLR #2 / 2N2222 | GND / Pin 1 (XLR) / Emitter
+5Vin | MAX485 #1 / MAX485 #2 / Fan | VCC / VCC / Fan +
+GPIO 4 | MAX485 #1 | DE + RE (tied together)
+GPIO 5 | MAX485 #2 | DE + RE (tied together)
+GPIO 6 | Fan circuit | 1kΩ resistor → Base 2N2222
+GPIO 9 | W5500 Mini | RST (J2, Pin 2)
+GPIO 10 | W5500 Mini | SCS / CS (J2, Pin 1)
+GPIO 11 | W5500 Mini | MOSI (J1, Pin 4)
+GPIO 12 | W5500 Mini | SCLK (J1, Pin 5)
+GPIO 13 | W5500 Mini | MISO (J1, Pin 3)
+GPIO 17 | MAX485 #1 | DI
+GPIO 18 | MAX485 #2 | DI
+
+
+W5500 Mini (Top view, RJ45 facing down)
+
+Row | Pin | Signal | ESP32-S3 Connection
+--- | --- | --- | ---
+Left (J1) | 1 (Top) | 3.3V | 3V3
+Left (J1) | 2 | GND | GND
+Left (J1) | 3 | MISO | GPIO 13
+Left (J1) | 4 | MOSI | GPIO 11
+Left (J1) | 5 (Bottom) | SCLK | GPIO 12
+Right (J2) | 1 (Top) | SCS | GPIO 10
+Right (J2) | 2 | RST | GPIO 9
+Right (J2) | 3 | INT | Not connected
+Right (J2) | 4 | NC | Not connected
+Right (J2) | 5 (Bottom) | NC | Not connected
+
+
+MAX485 Module #1 (DMX Universe 1)
+
+MAX485 #1 Pin | Connection
+--- | ---
+VCC | 5Vin (ESP32-S3)
+GND | GND (ESP32-S3) + Pin 1 (XLR #1)
+DI | GPIO 17 (ESP32-S3)
+RO | Not connected
+DE | GPIO 4 (ESP32-S3)
+RE | GPIO 4 (ESP32-S3, tied with DE)
+A | Pin 3 / DMX+ (XLR #1)
+B | Pin 2 / DMX- (XLR #1)
+
+
+MAX485 Module #2 (DMX Universe 2)
+
+MAX485 #2 Pin | Connection
+--- | ---
+VCC | 5Vin (ESP32-S3)
+GND | GND (ESP32-S3) + Pin 1 (XLR #2)
+DI | GPIO 18 (ESP32-S3)
+RO | Not connected
+DE | GPIO 5 (ESP32-S3)
+RE | GPIO 5 (ESP32-S3, tied with DE)
+A | Pin 3 / DMX+ (XLR #2)
+B | Pin 2 / DMX- (XLR #2)
+
+
+3-Pin XLR Connectors
+
+XLR Connector | XLR Pin | Connection
+--- | --- | ---
+XLR #1 (Universe 1) | Pin 1 (Shield) | GND
+XLR #1 (Universe 1) | Pin 2 (Data -) | B (MAX485 #1)
+XLR #1 (Universe 1) | Pin 3 (Data +) | A (MAX485 #1)
+XLR #2 (Universe 2) | Pin 1 (Shield) | GND
+XLR #2 (Universe 2) | Pin 2 (Data -) | B (MAX485 #2)
+XLR #2 (Universe 2) | Pin 3 (Data +) | A (MAX485 #2)
+
+
+Fan 40x40mm
+
+Fan Pin | Connection
+--- | ---
++ | 5Vin (ESP32-S3)
+- | Collector (2N2222)
+
+
+2N2222
+
+2N2222 Pin | Connection
+--- | ---
+Base | GPIO 6 through 1kΩ resistor
+Collector | Fan -
+Emitter | GND
+
+**Time spent today::** ~2h
