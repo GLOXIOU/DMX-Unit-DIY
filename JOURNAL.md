@@ -135,10 +135,16 @@ Here is a list of items to buy for the box, other than the electronic components
 | [1 kΩ resistor](https://fr.aliexpress.com/item/1005007010335100.html?spm=a2g0o.productlist.main.2.523edbe8tuC53K&algo_pvid=eab16429-cd6a-4887-bafe-4d5f768fbbed&algo_exp_id=eab16429-cd6a-4887-bafe-4d5f768fbbed-1&pdp_ext_f=%7B%22order%22%3A%227875%22%2C%22spu_best_type%22%3A%22price%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21EUR%211.13%211.13%21%21%218.58%218.58%21%40210384a717889787428548103e0d2e%2112000039049464817%21sea%21FR%218054027548%21X%211%210%21n_tag%3A-29919%3Bd%3A8484f755%3Bm03_new_user%3A-29895&curPageLogUid=Rd7q4RmfGcL3&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A1005007010335100%7C_p_origin_prod%3A) | 1 | 1,59$ |
 
 
-To run the fan, you need to add a 2N2222 transistor and a 1 kΩ resistor. So, I updated the ESP-32 wiring diagram with all that.
+To run the fan, you need to add a 2N2222 transistor and a 1 kΩ resistor. So, I need to updated the ESP-32 wiring diagram with all that. I also need to changes the 3D model, with the cover and all the wholes.
 
-Now, here are the changes to the 3D model: (You can check the V2 file [just here](3D-files/DMX%20Unit%20-%20V2.stl).)
+**Time spent today:** ~3h
+
+# Day 3: Finishing the 3D model and the ESP-32 wiring diagram
+
+I started by updating the 3D model: (You can check the V2 file [just here](3D-files/DMX%20Unit%20-%20V2.stl).)
 
 ![Second version](images/img-3.png)
 
-**Time spent today:** ~3h
+And the I finished the wiring diagram, with normally is the final version:
+
+![Final schema](images/schema-2.png)
