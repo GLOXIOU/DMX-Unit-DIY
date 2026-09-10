@@ -139,17 +139,17 @@ To run the fan, you need to add a 2N2222 transistor and a 1 kΩ resistor. So, I 
 
 **Time spent today:** ~3h
 
-# Day 3: Finishing the 3D model and the ESP-32 wiring diagram
+# Day 3: Continue the 3D model and the ESP-32 wiring diagram
 
 I started by updating the 3D model: (You can check the V2 file [just here](3D-files/DMX%20Unit%20-%20V2.stl).)
 
 ![Second version](images/img-3.png)
 
-And the I finished the wiring diagram, with normally is the final version:
+And the I finished the wiring diagram, wich normally is the final version:
 
 ![Final schema](images/schema-2.png)
 
-And I also updated the connection chart, so here is it:
+Please excuse the state of the wiring diagram. I had to create it on an iPad, which isn't very convenient. That’s why I’m making a connection chart to help me keep track of things when assembling the components. So I also updated the connection chart, so here is it:
 
 ESP32-S3 (S3-N16R8)
 
@@ -243,5 +243,7 @@ Collector | Fan -
 Emitter | GND
 
 The RJ45 connector is tricky because, since it's the mini version, the port labels aren't printed on the PCB. So, I asked an LLM about the pinout.
+
+Now that I've done that, all that's left is to finish the 3D model, write the full code, and create the readme. I think the modeling will take the longest.
 
 **Time spent today::** ~2h
