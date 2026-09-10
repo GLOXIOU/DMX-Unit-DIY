@@ -148,3 +148,7 @@ I started by updating the 3D model: (You can check the V2 file [just here](3D-fi
 And the I finished the wiring diagram, with normally is the final version:
 
 ![Final schema](images/schema-2.png)
+
+And I also updated the connection chart, so here is it:
+
+**Time spent today::** ~1h
