@@ -102,7 +102,7 @@ And the summary table:
 | **XLR #2 (Universe 2)** | Pin 2 (Data -) | **B** (MAX485 #2) |
 | **XLR #2 (Universe 2)** | Pin 3 (Data +) | **A** (MAX485 #2) |
 
-**Time spent today:** ~3h
+**Time spent today: 3h**
 
 # Day 2: 3D conception and other stuff
 
@@ -137,7 +137,7 @@ Here is a list of items to buy for the box, other than the electronic components
 
 To run the fan, you need to add a 2N2222 transistor and a 1 kΩ resistor. So, I need to updated the ESP-32 wiring diagram with all that. I also need to changes the 3D model, with the cover and all the wholes.
 
-**Time spent today:** ~3,5h
+**Time spent today: 3,5h**
 
 # Day 3: Continue the 3D model and the ESP-32 wiring diagram
 
@@ -262,4 +262,4 @@ The RJ45 connector is tricky because, since it's the mini version, the port labe
 
 Now that I've done that, all that's left is to finish the 3D model, write the full code, and create the readme. I think the modeling will take the longest. I also need to put together the complete BOM, including all prices and links.
 
-**Time spent today::** ~5h
+**Time spent today:: 5h**
