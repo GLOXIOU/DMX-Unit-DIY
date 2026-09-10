@@ -262,4 +262,4 @@ The RJ45 connector is tricky because, since it's the mini version, the port labe
 
 Now that I've done that, all that's left is to finish the 3D model, write the full code, and create the readme. I think the modeling will take the longest. I also need to put together the complete BOM, including all prices and links.
 
-**Time spent today:: 5h**
+**Time spent today: 5h**
