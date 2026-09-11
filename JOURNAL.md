@@ -102,7 +102,7 @@ And the summary table:
 | **XLR #2 (Universe 2)** | Pin 2 (Data -) | **B** (MAX485 #2) |
 | **XLR #2 (Universe 2)** | Pin 3 (Data +) | **A** (MAX485 #2) |
 
-**Time spent: 3h**
+**Total time spent: 3 hours**
 
 # Day 2: 3D conception and other stuff
 
@@ -137,7 +137,7 @@ Here is a list of items to buy for the box, other than the electronic components
 
 To run the fan, you need to add a 2N2222 transistor and a 1 kΩ resistor. So, I need to updated the ESP-32 wiring diagram with all that. I also need to changes the 3D model, with the cover and all the wholes.
 
-**Time spent: 3,5h**
+**Total time spent: 3.5 hours**
 
 # Day 3: Continue the 3D model and the ESP-32 wiring diagram
 
@@ -262,7 +262,7 @@ The RJ45 connector is tricky because, since it's the mini version, the port labe
 
 Now that I've done that, all that's left is to finish the 3D model, write the full code, and create the readme. I think the modeling will take the longest. I also need to put together the complete BOM, including all prices and links.
 
-**Time spent: 5h**
+**Total time spent: 5 hours**
 
 # Day 4: 3D modeling, again...
 
@@ -281,4 +281,22 @@ After that, I made the supports and the woles for the cover of the box. All that
 
 ![Woles for the cover](images/img-11.png)
 
-**Time spent: 1,5h**
+When I come back this afternoon, I search all the components on [grabcad](grabcad.com), download it, place it. You can check all the models I dowload in [this folder](3D-files/).
+
+And I made the support for the components. I also delete the curve edge that I made on the top of the box, beacause thre is already one on the cover. The componment are also integreted, the assembly is also complete. So here's how the 3D model look so far:
+
+![Final look](images/img-12.png)
+
+And there is the final 3D file [just here](3D-files/DMX%20Unit%20-%20V4%20-%20F.stl) !
+
+Here are several screenshots of the model and the assembly:
+
+![---](images/img-13.png)
+![---](images/img-14.png)
+![---](images/img-15.png)
+
+You can check all the final stl 3D files in [this folder](3D-files/to%20print/); the assembly files in [that folder](3D-files/assembly/) and the ultimate step assembly file [just here](3D-files/assembly/Unite%20DMX%20-%20Assembly.step)
+
+Today was so much modeling, and I learn so much things ! To sum up, all the mounts are done including the one for the cover the components are in the right places, and the airflow is optimized. I think the case is really great !
+
+**Total time spent: 5 hours**
