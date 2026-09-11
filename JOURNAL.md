@@ -277,4 +277,8 @@ Then I realized I'd made a mistake with the XLR output size. So I drilled anothe
 ![XLR Hole](images/img-9.png)
 ![The 3D version](images/img-10.png)
 
-**Time spent: 1h**
+After that, I made the supports and the woles for the cover of the box. All that remains are the mounts for the components !
+
+![Woles for the cover](images/img-11.png)
+
+**Time spent: 1,5h**
