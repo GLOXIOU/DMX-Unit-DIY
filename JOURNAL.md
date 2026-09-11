@@ -263,3 +263,18 @@ The RJ45 connector is tricky because, since it's the mini version, the port labe
 Now that I've done that, all that's left is to finish the 3D model, write the full code, and create the readme. I think the modeling will take the longest. I also need to put together the complete BOM, including all prices and links.
 
 **Time spent: 5h**
+
+# Day 4: 3D modeling, again...
+
+I started by making the edge of the box curved, beacause aparently it's a requirment in HackClub, so here it is:
+
+![Curved edge](images/img-8.png)
+
+And, like other days, you can check the V3 file [just here](3D-files/DMX%20Unit%20-%20V3.stl).
+
+Then I realized I'd made a mistake with the XLR output size. So I drilled another hole fot that, and for the screws.
+
+![XLR Hole](images/img-9.png)
+![The 3D version](images/img-10.png)
+
+**Time spent: 1h**
