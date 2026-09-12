@@ -322,4 +322,18 @@ I started the day by doing the BOM of the project using the tables I had already
 
 The chart didn't take me a huge amount of time, but I also verified the compatibility of all the components, the circuit diagram, as well as prices, links, quantities, and so on, just to be sure, since the project is nearing completion.
 
-**Total time spent: 1 hours**
+Next, I worked on the firmware. I would say about half the features are ready. It still needs testing, and most importantly, I need to go through this entire list:
+
+* DMX/USB input ("Enttec-like" mode when connecting the ESP32-S3 via USB).
+* Wi-Fi mode / configuration portal.
+* **ArtPoll** response (the device will not automatically appear in
+Art-Net discovery software — the IP address must be entered manually;
+`192.168.1.77` by default in this sketch).
+* Persistent settings storage (Preferences/EEPROM).
+* RDM.
+
+So there's still a little bit of work to do ! You can check the file V1 [just here](firvware%20-%20V1): Here is a look at the code:
+
+![Part of the code](images/img-16.png)
+
+**Total time spent: 3 hours**
