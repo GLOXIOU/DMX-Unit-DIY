@@ -332,7 +332,7 @@ Art-Net discovery software — the IP address must be entered manually;
 * Persistent settings storage (Preferences/EEPROM).
 * RDM.
 
-So there's still a little bit of work to do ! You can check the file V1 [just here](firvware%20-%20V1): Here is a look at the code:
+So there's still a little bit of work to do ! You can check the file V1 [just here](firvware%20-%20V1). Here is a look at the code:
 
 ![Part of the code](images/img-16.png)
 
