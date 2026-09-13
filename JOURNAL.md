@@ -362,7 +362,9 @@ However, for the code to work, it is necessary that the "USB CDC On Boot" parame
 
 I haven't compiled the final version of the code yet, so I'm going to do that to see if everything works. To do that, I'm using [wokwi](wokwi.com), and select ESP32-S3 template.
 
-The first time that I compiled, I had this message: ```sketch.ino: In function 'void setupFan()':
+The first time that I compiled, I had this message: 
+```cpp
+sketch.ino: In function 'void setupFan()':
 
 sketch.ino:264:3: error: 'ledcSetup' was not declared in this scope
 
@@ -378,9 +380,12 @@ sketch.ino:265:3: error: 'ledcAttachPin' was not declared in this scope; did you
 
 | ledcAttach
 
-Error during build: exit status 1```
+Error during build: exit status 1
+```
 
-So I modified the code at line 262 by that: ```// Fan
+So I modified the code at line 262 by that: 
+```cpp
+// Fan
 void setupFan() {
   ledcAttach(FAN_PIN, FAN_PWM_FREQ, FAN_PWM_RES);
   applyFanDuty(cfg.fanDuty);
@@ -388,7 +393,8 @@ void setupFan() {
 
 void applyFanDuty(uint8_t duty) {
   ledcWrite(FAN_PIN, duty);
-}```
+}
+```
 
 It was just a litlle Fan problem, but then I had a bigger problem with my DMX fonction. It was a pretty big bug, so I spent a lot of time on it. There was a version issue with the DMX package... I deleted the librairy and just use the native series port, on the advice of an LLM. After sorting that out, it work !! (I had to make some other litlle changes tho) Here's a proof:
 
