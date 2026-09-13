@@ -337,3 +337,68 @@ So there's still a little bit of work to do ! You can check the file V1 [just he
 ![Part of the code](images/img-16.png)
 
 **Total time spent: 3 hours**
+
+# Day 6: Finishing + testing the code
+
+I started the day by finishing writing the intire code. You can see the file [here](firvware%20-%20V2).
+
+Everything that was in the TO-DO list of yesterday is done. All that's left is to test it, even though I don't have the physical hardware to do so. The code is solid, so I'm a bit concerned about stability ! Worst case scenario, I'll modify the code later.
+
+The most time consuming part was building the web interface, as it was my first time creating one for an ESP-32. This interface allows you to:
+
+* Configure network settings, addresses, etc.
+* Configure Wi-Fi (SSID and password)
+* Set up Art-Net, assign DMX universes, etc.
+* Adjust hardware settings, configure the fan, and set up USB or Wi-Fi inputs
+* Scan the DMX network and perform RDM detection
+
+If everything works, it’s going to be really great !
+
+However, for the code to work, it is necessary that the "USB CDC On Boot" parameter is enabeld, and that all these libraries be installed:
+
+* esp_dmx by Mitch Weisbrod (in the lastest version)
+* Ethernet (arduino-libraries/Ethernet)
+* WiFi, WebServer, DNSServer, Preferences (but that come pre-installed on the board, so that's okay)
+
+I haven't compiled the final version of the code yet, so I'm going to do that to see if everything works. To do that, I'm using [wokwi](wokwi.com), and select ESP32-S3 template.
+
+The first time that I compiled, I had this message: ```sketch.ino: In function 'void setupFan()':
+
+sketch.ino:264:3: error: 'ledcSetup' was not declared in this scope
+
+264 | ledcSetup(FAN_PWM_CHANNEL, FAN_PWM_FREQ, FAN_PWM_RES);
+
+| ^~~~~~~~~
+
+sketch.ino:265:3: error: 'ledcAttachPin' was not declared in this scope; did you mean 'ledcAttach'?
+
+265 | ledcAttachPin(FAN_PIN, FAN_PWM_CHANNEL);
+
+| ^~~~~~~~~~~~~
+
+| ledcAttach
+
+Error during build: exit status 1```
+
+So I modified the code at line 262 by that: ```// Fan
+void setupFan() {
+  ledcAttach(FAN_PIN, FAN_PWM_FREQ, FAN_PWM_RES);
+  applyFanDuty(cfg.fanDuty);
+}
+
+void applyFanDuty(uint8_t duty) {
+  ledcWrite(FAN_PIN, duty);
+}```
+
+It was just a litlle Fan problem, but then I had a bigger problem with my DMX fonction. It was a pretty big bug, so I spent a lot of time on it. There was a version issue with the DMX package... I deleted the librairy and just use the native series port, on the advice of an LLM. After sorting that out, it work !! (I had to make some other litlle changes tho) Here's a proof:
+
+![It work](images/img-17.png)
+
+It was a lot of work... Check those screenshot:
+
+![It work](images/img-18.png)
+![It work](images/img-19.png)
+
+Now, I just need the physical equipment to test... Tomorow, I will send the project if everything is okay. I just need to do the README file.
+
+**Total time spent: 3.5 hours**
