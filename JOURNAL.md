@@ -421,4 +421,8 @@ After that, I checked absolutely everything line by line, image by image, and co
 
 I also updated the firmware file with some comments to understand the code easely.
 
+I need to put a picture in the journal day, so here it is, a screenshot of the README on github:
+
+![README](images/img-20.png)
+
 **Total time spent: 3 hours**
