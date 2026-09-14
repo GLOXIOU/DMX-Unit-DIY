@@ -6,20 +6,24 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 
+// W5500
 #define ETH_SCLK_PIN   12
 #define ETH_MISO_PIN   13
 #define ETH_MOSI_PIN   11
 #define ETH_CS_PIN     10
 #define ETH_RST_PIN    9
 
+// DMX 1
 #define DMX1_TX_PIN    17
 #define DMX1_RTS_PIN   4
 #define DMX1_RX_PIN    16
 
+// DMX 2
 #define DMX2_TX_PIN    18
 #define DMX2_RTS_PIN   5
 #define DMX2_RX_PIN    15
 
+// Fan PWM control
 #define FAN_PIN         6
 #define FAN_PWM_FREQ    25000
 #define FAN_PWM_RES     8
@@ -27,10 +31,12 @@
 HardwareSerial DebugSerial(0);
 #define DBG DebugSerial
 
+// WiFi acces point
 #define WIFI_AP_SSID        "DMX-Unit-Setup"
 #define WIFI_AP_PASSWORD    "dmxsetup1"
 #define WIFI_STA_TIMEOUT_MS 10000UL
 
+// Art-Net
 #define ARTNET_PORT           6454
 #define ARTNET_HEADER_SZ      18
 #define ARTNET_MAX_SIZE       530
@@ -61,10 +67,11 @@ unsigned long lastDmxSendMs = 0;
 const unsigned long DMX_REFRESH_MS = 25;
 
 unsigned long lastUsbDmxMs = 0;
-const unsigned long USB_DMX_TIMEOUT_MS = 2000; 
+const unsigned long USB_DMX_TIMEOUT_MS = 2000;
 
 #define CFG_NAMESPACE "dmxcfg"
 
+// Structure regroupant la configuration système
 struct DmxUnitConfig {
   IPAddress ip;
   IPAddress gw;
@@ -87,6 +94,7 @@ DNSServer dnsServer;
 bool apMode = false;
 IPAddress apIP(192, 168, 4, 1);
 
+// DMX
 #define ENTTEC_START 0x7E
 #define ENTTEC_END   0xE7
 #define ENTTEC_LABEL_GET_WIDGET_PARAMS 3
@@ -159,6 +167,7 @@ void loop() {
     memcpy(dmxData1, dmxUsbData, 513);
   }
 
+  // Émission DMX périodique
   unsigned long now = millis();
   if (now - lastDmxSendMs >= DMX_REFRESH_MS) {
     lastDmxSendMs = now;
@@ -213,6 +222,7 @@ void applyFanDuty(uint8_t duty) {
   ledcWrite(FAN_PIN, duty);
 }
 
+// Series port for DMX
 void setupDmxOutputs() {
   memset(dmxData1, 0, 513);
   memset(dmxData2, 0, 513);
@@ -241,6 +251,7 @@ void sendDmx() {
   dmxPort2.write(dmxData2, 513);
 }
 
+// W5500
 void setupEthernet() {
   pinMode(ETH_RST_PIN, OUTPUT);
   digitalWrite(ETH_RST_PIN, LOW);
@@ -263,10 +274,12 @@ void setupEthernet() {
   DBG.println(Ethernet.localIP());
 }
 
+// UDP Art-Net
 void setupArtnet() {
   artnetUdp.begin(ARTNET_PORT);
 }
 
+// UDP packet reception
 void pollArtnet() {
   int packetSize = artnetUdp.parsePacket();
   if (packetSize <= 0) return;
@@ -279,11 +292,14 @@ void handleArtnetPacket(uint8_t *buf, int len) {
   if (len < 10) return;
   if (memcmp(buf, ARTNET_ID, 8) != 0) return;
   uint16_t opcode = buf[8] | (buf[9] << 8);
+  
   if (opcode == ARTNET_OP_POLL) {
     IPAddress bcast = calcBroadcastAddress(Ethernet.localIP(), cfg.sn);
     sendArtPollReply(bcast);
     return;
   }
+  
+  // ArtDMX
   if (opcode != ARTNET_OP_DMX) return;
   if (len < ARTNET_HEADER_SZ) return;
   uint8_t subUni = buf[14];
@@ -293,6 +309,7 @@ void handleArtnetPacket(uint8_t *buf, int len) {
   if (dmxLen > 512) dmxLen = 512;
   if (len < ARTNET_HEADER_SZ + dmxLen) return;
   uint8_t *dmxPayload = buf + ARTNET_HEADER_SZ;
+  
   if (universe == cfg.universe1) {
     memcpy(&dmxData1[1], dmxPayload, dmxLen);
   } else if (universe == cfg.universe2) {
@@ -307,11 +324,12 @@ IPAddress calcBroadcastAddress(IPAddress ip, IPAddress sn) {
   return IPAddress(bcastN);
 }
 
+// ArtPollReply
 void sendArtPollReply(IPAddress dest) {
   memset(pollReplyBuf, 0, sizeof(pollReplyBuf));
   memcpy(pollReplyBuf, ARTNET_ID, 8);
   pollReplyBuf[8] = 0x00;
-  pollReplyBuf[9] = 0x21;
+  pollReplyBuf[9] = 0x21; // Opcode ArtPollReply
   IPAddress ip = Ethernet.localIP();
   pollReplyBuf[10] = ip[0];
   pollReplyBuf[11] = ip[1];
@@ -320,7 +338,7 @@ void sendArtPollReply(IPAddress dest) {
   pollReplyBuf[14] = ARTNET_PORT & 0xFF;
   pollReplyBuf[15] = (ARTNET_PORT >> 8) & 0xFF;
   pollReplyBuf[16] = 0;
-  pollReplyBuf[17] = 2;
+  pollReplyBuf[17] = 2; // Nombre de ports de sortie
   pollReplyBuf[18] = (cfg.universe1 >> 8) & 0x7F;
   pollReplyBuf[19] = (cfg.universe1 >> 4) & 0x0F;
   pollReplyBuf[20] = 0x00;
@@ -444,6 +462,7 @@ void pollUsbDmx() {
   }
 }
 
+// Wi-Fi and web portal
 void setupWifiPortal() {
   bool connected = false;
 
@@ -475,6 +494,7 @@ void setupWifiPortal() {
     DBG.println(apIP);
   }
 
+  // URL
   webServer.on("/", HTTP_GET, handleRoot);
   webServer.on("/save", HTTP_POST, handleSave);
   webServer.on("/scan", HTTP_GET, handleScanRdm);
@@ -502,6 +522,7 @@ String rdmUidsToHtml(int portIndex) {
   return "<p>RDM non pris en charge en mode Serial natif.</p>";
 }
 
+// HTML page for configuration
 void handleRoot() {
   String html;
   html.reserve(6000);
@@ -581,6 +602,7 @@ void handleScanRdm() {
   webServer.send(302, "text/plain", "");
 }
 
+// Reboot
 void handleReboot() {
   webServer.send(200, "text/html", "<html><body>Redemarrage...</body></html>");
   delay(300);

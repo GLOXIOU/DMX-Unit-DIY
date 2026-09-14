@@ -408,3 +408,17 @@ It was a lot of work... Check those screenshot:
 Now, I just need the physical equipment to test... Tomorow, I will send the project if everything is okay. I just need to do the README file.
 
 **Total time spent: 3.5 hours**
+
+# Day 7: README and verification
+
+Today is the last day, this night I'm gonna publish the project.
+
+I just need to do the README and verified the entire project (schema, BOM, connection, code, etc.), so The documentation isn't going to be very long.
+
+I started by creating the README, while also looking at the repositories of people whose projects had already been accepted. This helped me avoid mistakes even in the rest of the project by observing the kind of feedback the Hack Club team typically gives.
+
+After that, I checked absolutely everything line by line, image by image, and code block by code block (it took a long time !).
+
+I also updated the firmware file with some comments to understand the code easely.
+
+**Total time spent: 3 hours**
