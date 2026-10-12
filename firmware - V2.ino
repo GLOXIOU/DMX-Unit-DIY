@@ -28,8 +28,15 @@
 #define FAN_PWM_FREQ    25000
 #define FAN_PWM_RES     8
 
-HardwareSerial DebugSerial(0);
-#define DBG DebugSerial
+#define PORTAL_ONLY_TEST 0
+#define FORCE_AP_MODE    1
+
+#if PORTAL_ONLY_TEST
+  #define DBG Serial
+#else
+  HardwareSerial DebugSerial(0);
+  #define DBG DebugSerial
+#endif
 
 // WiFi acces point
 #define WIFI_AP_SSID        "DMX-Unit-Setup"
@@ -71,7 +78,6 @@ const unsigned long USB_DMX_TIMEOUT_MS = 2000;
 
 #define CFG_NAMESPACE "dmxcfg"
 
-// Structure regroupant la configuration système
 struct DmxUnitConfig {
   IPAddress ip;
   IPAddress gw;
@@ -93,6 +99,8 @@ WebServer webServer(80);
 DNSServer dnsServer;
 bool apMode = false;
 IPAddress apIP(192, 168, 4, 1);
+bool ethReady = false;
+unsigned long webReqCount = 0;
 
 // DMX
 #define ENTTEC_START 0x7E
@@ -139,40 +147,91 @@ void handleSave();
 void handleScanRdm();
 void handleReboot();
 void handleNotFound();
+void logReq(const char *tag);
+void setupWifiEvents();
+void heartbeat();
+void webTask(void *arg);
 String rdmUidsToHtml(int portIndex);
 
 void setup() {
+#if PORTAL_ONLY_TEST
+  Serial.begin(115200);
+  unsigned long t0 = millis();
+  while (!Serial && millis() - t0 < 3000) delay(10);
+  delay(500);
+#else
   DebugSerial.begin(115200);
   Serial.begin(115200);
   delay(200);
+#endif
   DBG.println();
-  DBG.println(F("DMX-Unit-DIY - firmware V2"));
+  DBG.println(F("=== DMX-Unit-DIY firmware V2 (debug) ==="));
+  DBG.printf("Raison du reset : %d\n", (int)esp_reset_reason());
+  DBG.printf("Heap libre : %u octets\n", ESP.getFreeHeap());
   loadConfig();
+  DBG.printf("Config : SSID sauvegarde = '%s'\n", cfg.wifiSsid.c_str());
+
+#if PORTAL_ONLY_TEST
+  DBG.println(F("MODE TEST : DMX / Ethernet / Art-Net / USB desactives"));
+#else
   setupFan();
   setupDmxOutputs();
   setupEthernet();
-  setupArtnet();
+  if (ethReady) setupArtnet();
+#endif
+
   setupWifiPortal();
+
+#if !PORTAL_ONLY_TEST
   setupUsbDmx();
+  xTaskCreatePinnedToCore(webTask, "web", 8192, NULL, 1, NULL, 0);
+#endif
+  DBG.println(F("setup() termine"));
+}
+
+void webTask(void *arg) {
+  for (;;) {
+    handlePortal();
+    vTaskDelay(2);
+  }
+}
+
+void heartbeat() {
+  static unsigned long last = 0;
+  if (millis() - last < 5000) return;
+  last = millis();
+  DBG.printf("[%lus] heap=%u clients_wifi=%d requetes_http=%lu mode=%s\n",
+             millis() / 1000, ESP.getFreeHeap(), WiFi.softAPgetStationNum(),
+             webReqCount, apMode ? "AP" : "STA");
+  if (apMode) {
+    DBG.printf("   AP '%s' / IP %s / canal %d\n", WIFI_AP_SSID,
+               WiFi.softAPIP().toString().c_str(), WiFi.channel());
+  }
 }
 
 void loop() {
-  Ethernet.maintain();
-  pollArtnet();
-  pollUsbDmx();
+#if PORTAL_ONLY_TEST
   handlePortal();
+#else
+  if (ethReady) {
+    Ethernet.maintain();
+    pollArtnet();
+  }
+  pollUsbDmx();
 
   bool usbLive = cfg.usbInputEnabled && (millis() - lastUsbDmxMs < USB_DMX_TIMEOUT_MS);
   if (usbLive) {
     memcpy(dmxData1, dmxUsbData, 513);
   }
 
-  // Émission DMX périodique
+  // Emission DMX periodique
   unsigned long now = millis();
   if (now - lastDmxSendMs >= DMX_REFRESH_MS) {
     lastDmxSendMs = now;
     sendDmx();
   }
+#endif
+  heartbeat();
 }
 
 void loadConfig() {
@@ -263,13 +322,14 @@ void setupEthernet() {
   Ethernet.init(ETH_CS_PIN);
 
   DBG.println(F("Initialisation Ethernet..."));
-  
-  if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-    DBG.println(F("ERREUR: W5500 non detecte. Poursuite en Wi-Fi seul."));
-    return;
-  }
 
   Ethernet.begin(macAddress, cfg.ip, cfg.gw, cfg.gw, cfg.sn);
+  if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+    DBG.println(F("ERREUR: W5500 non detecte. Poursuite en Wi-Fi seul."));
+    ethReady = false;
+    return;
+  }
+  ethReady = true;
   DBG.print(F("IP Ethernet (Art-Net): "));
   DBG.println(Ethernet.localIP());
 }
@@ -338,7 +398,7 @@ void sendArtPollReply(IPAddress dest) {
   pollReplyBuf[14] = ARTNET_PORT & 0xFF;
   pollReplyBuf[15] = (ARTNET_PORT >> 8) & 0xFF;
   pollReplyBuf[16] = 0;
-  pollReplyBuf[17] = 2; // Nombre de ports de sortie
+  pollReplyBuf[17] = 2;
   pollReplyBuf[18] = (cfg.universe1 >> 8) & 0x7F;
   pollReplyBuf[19] = (cfg.universe1 >> 4) & 0x0F;
   pollReplyBuf[20] = 0x00;
@@ -463,10 +523,36 @@ void pollUsbDmx() {
 }
 
 // Wi-Fi and web portal
+void setupWifiEvents() {
+  WiFi.onEvent([](arduino_event_id_t event, arduino_event_info_t info) {
+    switch (event) {
+      case ARDUINO_EVENT_WIFI_AP_START:
+        DBG.println(F("[WiFi] Point d'acces demarre"));
+        break;
+      case ARDUINO_EVENT_WIFI_AP_STACONNECTED: {
+        const uint8_t *m = info.wifi_ap_staconnected.mac;
+        DBG.printf("[WiFi] Client connecte : %02X:%02X:%02X:%02X:%02X:%02X\n",
+                   m[0], m[1], m[2], m[3], m[4], m[5]);
+        break;
+      }
+      case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
+        DBG.println(F("[WiFi] Client deconnecte"));
+        break;
+      case ARDUINO_EVENT_WIFI_AP_STAIPASSIGNED:
+        DBG.printf("[WiFi] DHCP : IP donnee au client = %s\n",
+                   IPAddress(info.wifi_ap_staipassigned.ip.addr).toString().c_str());
+        break;
+      default:
+        break;
+    }
+  });
+}
+
 void setupWifiPortal() {
   bool connected = false;
+  setupWifiEvents();
 
-  if (cfg.wifiSsid.length() > 0) {
+  if (!FORCE_AP_MODE && cfg.wifiSsid.length() > 0) {
     DBG.printf("Connexion Wi-Fi a '%s'...\n", cfg.wifiSsid.c_str());
     WiFi.mode(WIFI_STA);
     WiFi.begin(cfg.wifiSsid.c_str(), cfg.wifiPass.c_str());
@@ -485,8 +571,13 @@ void setupWifiPortal() {
   } else {
     apMode = true;
     WiFi.mode(WIFI_AP);
-    WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-    WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASSWORD);
+    delay(100);
+    bool cfgOk = WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+    bool apOk  = WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASSWORD);
+    delay(500);
+    DBG.printf("softAPConfig = %s / softAP = %s\n", cfgOk ? "OK" : "ECHEC", apOk ? "OK" : "ECHEC");
+    DBG.print(F("IP reelle du point d'acces : "));
+    DBG.println(WiFi.softAPIP());
     dnsServer.start(53, "*", apIP);
     DBG.print(F("Point d'acces actif : "));
     DBG.println(WIFI_AP_SSID);
@@ -504,12 +595,20 @@ void setupWifiPortal() {
   DBG.println(F("Serveur Web demarre !"));
 }
 
+void logReq(const char *tag) {
+  webReqCount++;
+  DBG.printf("[HTTP] %s %s depuis %s (Host: %s)\n", tag, webServer.uri().c_str(),
+             webServer.client().remoteIP().toString().c_str(),
+             webServer.hostHeader().c_str());
+}
+
 void handlePortal() {
   if (apMode) dnsServer.processNextRequest();
   webServer.handleClient();
 }
 
 void handleNotFound() {
+  logReq("404->redirect");
   if (apMode) {
     webServer.sendHeader("Location", "/", true);
     webServer.send(302, "text/plain", "");
@@ -524,12 +623,13 @@ String rdmUidsToHtml(int portIndex) {
 
 // HTML page for configuration
 void handleRoot() {
+  logReq("GET");
   String html;
   html.reserve(6000);
   html += F("<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>DMX-Unit-DIY</title><style>body{font-family:sans-serif;max-width:640px;margin:20px auto;padding:0 12px;}fieldset{margin-bottom:16px;}label{display:block;margin-top:8px;}input[type=text],input[type=number],input[type=password]{width:100%;box-sizing:border-box;padding:6px;}button{padding:8px 16px;margin-top:8px;}</style></head><body>");
   html += F("<h1>DMX-Unit-DIY</h1>");
   html += "<h2>Etat</h2><ul>";
-  html += "<li>IP Ethernet (Art-Net) : " + Ethernet.localIP().toString() + "</li>";
+  html += "<li>IP Ethernet (Art-Net) : " + (ethReady ? Ethernet.localIP().toString() : String("non initialise")) + "</li>";
   if (apMode) {
     html += "<li>Wi-Fi : point d'acces " WIFI_AP_SSID "</li>";
   } else {
@@ -575,6 +675,7 @@ void handleRoot() {
 }
 
 void handleSave() {
+  logReq("POST");
   if (webServer.hasArg("ip"))    cfg.ip = strToIp(webServer.arg("ip"), cfg.ip);
   if (webServer.hasArg("gw"))    cfg.gw = strToIp(webServer.arg("gw"), cfg.gw);
   if (webServer.hasArg("sn"))    cfg.sn = strToIp(webServer.arg("sn"), cfg.sn);
@@ -604,6 +705,7 @@ void handleScanRdm() {
 
 // Reboot
 void handleReboot() {
+  logReq("POST");
   webServer.send(200, "text/html", "<html><body>Redemarrage...</body></html>");
   delay(300);
   ESP.restart();
