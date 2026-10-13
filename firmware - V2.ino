@@ -30,8 +30,10 @@
 
 #define PORTAL_ONLY_TEST 0
 #define FORCE_AP_MODE    1
+#define DEBUG_ON_USB     1
+#define DMX_SELFTEST     1
 
-#if PORTAL_ONLY_TEST
+#if PORTAL_ONLY_TEST || DEBUG_ON_USB
   #define DBG Serial
 #else
   HardwareSerial DebugSerial(0);
@@ -90,6 +92,9 @@ struct DmxUnitConfig {
   String longName;
   uint8_t fanDuty;
   bool usbInputEnabled;
+  bool dmx1Enabled;
+  bool dmx2Enabled;
+  bool artnetEnabled;
 };
 
 DmxUnitConfig cfg;
@@ -101,6 +106,43 @@ bool apMode = false;
 IPAddress apIP(192, 168, 4, 1);
 bool ethReady = false;
 unsigned long webReqCount = 0;
+
+unsigned long dmxFrames1 = 0;
+unsigned long dmxFrames2 = 0;
+unsigned long artnetPollCount = 0;
+unsigned long artnetDmxCount1 = 0;
+unsigned long artnetDmxCount2 = 0;
+unsigned long artnetIgnored = 0;
+unsigned long usbPacketCount = 0;
+bool usbWasLive = false;
+bool artnetSeen1 = false;
+bool artnetSeen2 = false;
+
+const char *onOff(bool b) {
+  return b ? "ON" : "OFF";
+}
+
+const char *ethLinkName() {
+  if (!ethReady) return "non initialise";
+  switch (Ethernet.linkStatus()) {
+    case LinkON:  return "ON";
+    case LinkOFF: return "OFF (cable debranche ?)";
+    default:      return "inconnu";
+  }
+}
+
+bool isUsbLive() {
+  return cfg.usbInputEnabled && lastUsbDmxMs != 0 && (millis() - lastUsbDmxMs < USB_DMX_TIMEOUT_MS);
+}
+
+const char *dmxSourceName(int port) {
+  if (port == 1 && isUsbLive()) return "USB";
+#if DMX_SELFTEST
+  return "TEST";
+#else
+  return "ARTNET";
+#endif
+}
 
 // DMX
 #define ENTTEC_START 0x7E
@@ -152,9 +194,11 @@ void setupWifiEvents();
 void heartbeat();
 void webTask(void *arg);
 String rdmUidsToHtml(int portIndex);
+void applyOutputState();
+void logDmxStats();
 
 void setup() {
-#if PORTAL_ONLY_TEST
+#if PORTAL_ONLY_TEST || DEBUG_ON_USB
   Serial.begin(115200);
   unsigned long t0 = millis();
   while (!Serial && millis() - t0 < 3000) delay(10);
@@ -165,11 +209,18 @@ void setup() {
   delay(200);
 #endif
   DBG.println();
-  DBG.println(F("=== DMX-Unit-DIY firmware V2 (debug) ==="));
+  DBG.println(F("=== DMX-Unit-DIY firmware V3 (debug) ==="));
   DBG.printf("Raison du reset : %d\n", (int)esp_reset_reason());
   DBG.printf("Heap libre : %u octets\n", ESP.getFreeHeap());
   loadConfig();
   DBG.printf("Config : SSID sauvegarde = '%s'\n", cfg.wifiSsid.c_str());
+  DBG.printf("Config : DMX1=%s DMX2=%s ARTNET=%s USB=%s\n",
+             onOff(cfg.dmx1Enabled), onOff(cfg.dmx2Enabled),
+             onOff(cfg.artnetEnabled), onOff(cfg.usbInputEnabled));
+  DBG.printf("Config : univers1=%u univers2=%u IP=%s\n",
+             cfg.universe1, cfg.universe2, cfg.ip.toString().c_str());
+  DBG.printf("Options : SELFTEST=%d DEBUG_ON_USB=%d FORCE_AP=%d\n",
+             DMX_SELFTEST, DEBUG_ON_USB, FORCE_AP_MODE);
 
 #if PORTAL_ONLY_TEST
   DBG.println(F("MODE TEST : DMX / Ethernet / Art-Net / USB desactives"));
@@ -177,7 +228,11 @@ void setup() {
   setupFan();
   setupDmxOutputs();
   setupEthernet();
-  if (ethReady) setupArtnet();
+  if (ethReady) {
+    setupArtnet();
+  } else {
+    DBG.println(F("[ARTNET] inactif : Ethernet non pret"));
+  }
 #endif
 
   setupWifiPortal();
@@ -207,6 +262,12 @@ void heartbeat() {
     DBG.printf("   AP '%s' / IP %s / canal %d\n", WIFI_AP_SSID,
                WiFi.softAPIP().toString().c_str(), WiFi.channel());
   }
+  DBG.printf("   DMX1=%s DMX2=%s ARTNET=%s | ETH lien=%s\n",
+             onOff(cfg.dmx1Enabled), onOff(cfg.dmx2Enabled),
+             onOff(cfg.artnetEnabled), ethLinkName());
+  DBG.printf("   ArtDMX u1=%lu u2=%lu polls=%lu ignores=%lu | USB paquets=%lu\n",
+             artnetDmxCount1, artnetDmxCount2, artnetPollCount,
+             artnetIgnored, usbPacketCount);
 }
 
 void loop() {
@@ -219,10 +280,26 @@ void loop() {
   }
   pollUsbDmx();
 
-  bool usbLive = cfg.usbInputEnabled && (millis() - lastUsbDmxMs < USB_DMX_TIMEOUT_MS);
+  bool usbLive = isUsbLive();
+  if (usbLive != usbWasLive) {
+    usbWasLive = usbLive;
+    DBG.printf("[USB] source USB %s\n", usbLive ? "ACTIVE (sortie 1 pilotee par USB)" : "PERDUE (retour Art-Net)");
+  }
   if (usbLive) {
     memcpy(dmxData1, dmxUsbData, 513);
   }
+
+#if DMX_SELFTEST
+  if (!usbLive) {
+    // generateur de test : rampe 0-255-0 sur les canaux 1 a 4 des 2 sorties
+    uint16_t t = (millis() / 10) % 512;
+    uint8_t v = t < 256 ? t : 511 - t;
+    for (int i = 1; i <= 4; i++) {
+      dmxData1[i] = v;
+      dmxData2[i] = v;
+    }
+  }
+#endif
 
   // Emission DMX periodique
   unsigned long now = millis();
@@ -247,6 +324,9 @@ void loadConfig() {
   cfg.longName  = prefs.getString("lname", "DMX-Unit-DIY - Art-Net Node");
   cfg.fanDuty = prefs.getUChar("fanduty", 180);
   cfg.usbInputEnabled = prefs.getBool("usbin", true);
+  cfg.dmx1Enabled = prefs.getBool("dmx1en", true);
+  cfg.dmx2Enabled = prefs.getBool("dmx2en", true);
+  cfg.artnetEnabled = prefs.getBool("anen", true);
   prefs.end();
 }
 
@@ -263,6 +343,9 @@ void saveConfig() {
   prefs.putString("lname", cfg.longName);
   prefs.putUChar("fanduty", cfg.fanDuty);
   prefs.putBool("usbin", cfg.usbInputEnabled);
+  prefs.putBool("dmx1en", cfg.dmx1Enabled);
+  prefs.putBool("dmx2en", cfg.dmx2Enabled);
+  prefs.putBool("anen", cfg.artnetEnabled);
   prefs.end();
 }
 
@@ -279,6 +362,7 @@ void setupFan() {
 
 void applyFanDuty(uint8_t duty) {
   ledcWrite(FAN_PIN, duty);
+  DBG.printf("[FAN] vitesse = %u/255 (pin %d)\n", duty, FAN_PIN);
 }
 
 // Series port for DMX
@@ -288,26 +372,62 @@ void setupDmxOutputs() {
   memset(dmxUsbData, 0, 513);
   pinMode(DMX1_RTS_PIN, OUTPUT);
   pinMode(DMX2_RTS_PIN, OUTPUT);
-  digitalWrite(DMX1_RTS_PIN, HIGH);
-  digitalWrite(DMX2_RTS_PIN, HIGH);
+  applyOutputState();
   dmxPort1.begin(250000, SERIAL_8N2, DMX1_RX_PIN, DMX1_TX_PIN);
   dmxPort2.begin(250000, SERIAL_8N2, DMX2_RX_PIN, DMX2_TX_PIN);
+  DBG.printf("[DMX] S1 TX=%d RTS=%d RX=%d | S2 TX=%d RTS=%d RX=%d | 250000 bauds 8N2\n",
+             DMX1_TX_PIN, DMX1_RTS_PIN, DMX1_RX_PIN,
+             DMX2_TX_PIN, DMX2_RTS_PIN, DMX2_RX_PIN);
+}
+
+void applyOutputState() {
+  digitalWrite(DMX1_RTS_PIN, cfg.dmx1Enabled ? HIGH : LOW);
+  digitalWrite(DMX2_RTS_PIN, cfg.dmx2Enabled ? HIGH : LOW);
+  DBG.printf("[DMX] sortie 1 = %s (RTS=%s) | sortie 2 = %s (RTS=%s)\n",
+             onOff(cfg.dmx1Enabled), cfg.dmx1Enabled ? "HIGH" : "LOW",
+             onOff(cfg.dmx2Enabled), cfg.dmx2Enabled ? "HIGH" : "LOW");
 }
 
 void sendDmx() {
-  dmxPort1.flush();
-  dmxPort1.updateBaudRate(57600);
-  dmxPort1.write(0);
-  dmxPort1.flush();
-  dmxPort1.updateBaudRate(250000);
-  dmxPort1.write(dmxData1, 513);
-  
-  dmxPort2.flush();
-  dmxPort2.updateBaudRate(57600);
-  dmxPort2.write(0);
-  dmxPort2.flush();
-  dmxPort2.updateBaudRate(250000);
-  dmxPort2.write(dmxData2, 513);
+  if (cfg.dmx1Enabled) {
+    dmxPort1.flush();
+    dmxPort1.updateBaudRate(57600);
+    dmxPort1.write(0);
+    dmxPort1.flush();
+    dmxPort1.updateBaudRate(250000);
+    dmxPort1.write(dmxData1, 513);
+    dmxFrames1++;
+  }
+
+  if (cfg.dmx2Enabled) {
+    dmxPort2.flush();
+    dmxPort2.updateBaudRate(57600);
+    dmxPort2.write(0);
+    dmxPort2.flush();
+    dmxPort2.updateBaudRate(250000);
+    dmxPort2.write(dmxData2, 513);
+    dmxFrames2++;
+  }
+
+  logDmxStats();
+}
+
+void logDmxStats() {
+  static unsigned long last = 0;
+  static unsigned long prev1 = 0;
+  static unsigned long prev2 = 0;
+  unsigned long now = millis();
+  if (now - last < 2000) return;
+  float dt = (now - last) / 1000.0f;
+  last = now;
+  DBG.printf("[DMX] S1 %s src=%s %.1f tr/s ch1-4=%u,%u,%u,%u\n",
+             onOff(cfg.dmx1Enabled), dmxSourceName(1), (dmxFrames1 - prev1) / dt,
+             dmxData1[1], dmxData1[2], dmxData1[3], dmxData1[4]);
+  DBG.printf("[DMX] S2 %s src=%s %.1f tr/s ch1-4=%u,%u,%u,%u\n",
+             onOff(cfg.dmx2Enabled), dmxSourceName(2), (dmxFrames2 - prev2) / dt,
+             dmxData2[1], dmxData2[2], dmxData2[3], dmxData2[4]);
+  prev1 = dmxFrames1;
+  prev2 = dmxFrames2;
 }
 
 // W5500
@@ -332,17 +452,24 @@ void setupEthernet() {
   ethReady = true;
   DBG.print(F("IP Ethernet (Art-Net): "));
   DBG.println(Ethernet.localIP());
+  DBG.printf("[ETH] W5500 detecte, lien = %s\n", ethLinkName());
 }
 
 // UDP Art-Net
 void setupArtnet() {
   artnetUdp.begin(ARTNET_PORT);
+  DBG.printf("[ARTNET] ecoute UDP %d (Art-Net %s)\n", ARTNET_PORT, onOff(cfg.artnetEnabled));
 }
 
 // UDP packet reception
 void pollArtnet() {
   int packetSize = artnetUdp.parsePacket();
   if (packetSize <= 0) return;
+  if (!cfg.artnetEnabled) {
+    artnetIgnored++;
+    artnetUdp.flush();
+    return;
+  }
   if (packetSize > ARTNET_MAX_SIZE) packetSize = ARTNET_MAX_SIZE;
   artnetUdp.read(artnetBuffer, packetSize);
   handleArtnetPacket(artnetBuffer, packetSize);
@@ -355,6 +482,8 @@ void handleArtnetPacket(uint8_t *buf, int len) {
   
   if (opcode == ARTNET_OP_POLL) {
     IPAddress bcast = calcBroadcastAddress(Ethernet.localIP(), cfg.sn);
+    artnetPollCount++;
+    DBG.printf("[ARTNET] ArtPoll recu -> reponse envoyee a %s\n", bcast.toString().c_str());
     sendArtPollReply(bcast);
     return;
   }
@@ -372,8 +501,25 @@ void handleArtnetPacket(uint8_t *buf, int len) {
   
   if (universe == cfg.universe1) {
     memcpy(&dmxData1[1], dmxPayload, dmxLen);
+    artnetDmxCount1++;
+    if (!artnetSeen1) {
+      artnetSeen1 = true;
+      DBG.printf("[ARTNET] premier ArtDMX univers %u -> sortie 1 (%u canaux)\n", universe, dmxLen);
+    }
   } else if (universe == cfg.universe2) {
     memcpy(&dmxData2[1], dmxPayload, dmxLen);
+    artnetDmxCount2++;
+    if (!artnetSeen2) {
+      artnetSeen2 = true;
+      DBG.printf("[ARTNET] premier ArtDMX univers %u -> sortie 2 (%u canaux)\n", universe, dmxLen);
+    }
+  } else {
+    static uint16_t lastIgnored = 0xFFFF;
+    if (universe != lastIgnored) {
+      lastIgnored = universe;
+      DBG.printf("[ARTNET] ArtDMX univers %u ignore (attendu %u ou %u)\n",
+                 universe, cfg.universe1, cfg.universe2);
+    }
   }
 }
 
@@ -472,13 +618,21 @@ void handleUsbDmxPacket(uint8_t label, uint8_t *data, uint16_t len) {
         if (n > 512) n = 512;
         memcpy(&dmxUsbData[1], &data[1], n);
         lastUsbDmxMs = millis();
+        usbPacketCount++;
+        if (usbPacketCount == 1) {
+          DBG.printf("[USB] premier paquet DMX recu (%u octets)\n", len);
+        }
       }
       break;
     case ENTTEC_LABEL_GET_WIDGET_PARAMS: {
       uint8_t reply[5] = { 1, 0, 9, 9, 40 };
+      DBG.println(F("[USB] GET_WIDGET_PARAMS recu -> reponse envoyee"));
       sendEnttecReply(ENTTEC_LABEL_GET_WIDGET_PARAMS, reply, sizeof(reply));
       break;
     }
+    default:
+      DBG.printf("[USB] label %u non gere (%u octets)\n", label, len);
+      break;
   }
 }
 
@@ -635,11 +789,16 @@ void handleRoot() {
   } else {
     html += "<li>Wi-Fi : connecte, IP " + WiFi.localIP().toString() + "</li>";
   }
-  bool usbLive = (millis() - lastUsbDmxMs < USB_DMX_TIMEOUT_MS);
-  html += "<li>Source sortie 1 : " + String(usbLive ? "USB (Enttec-like)" : "Art-Net") + "</li>";
-  html += "<li>Source sortie 2 : Art-Net</li>";
+  html += "<li>Sortie DMX 1 : " + String(onOff(cfg.dmx1Enabled)) + " - source " + dmxSourceName(1) + "</li>";
+  html += "<li>Sortie DMX 2 : " + String(onOff(cfg.dmx2Enabled)) + " - source " + dmxSourceName(2) + "</li>";
+  html += "<li>Art-Net : " + String(onOff(cfg.artnetEnabled)) + "</li>";
   html += "</ul>";
   html += "<form method='POST' action='/save'>";
+  html += F("<fieldset><legend>Activation</legend>");
+  html += "<label><input type='checkbox' name='dmx1en' " + String(cfg.dmx1Enabled ? "checked" : "") + "> Sortie DMX 1</label>";
+  html += "<label><input type='checkbox' name='dmx2en' " + String(cfg.dmx2Enabled ? "checked" : "") + "> Sortie DMX 2</label>";
+  html += "<label><input type='checkbox' name='anen' " + String(cfg.artnetEnabled ? "checked" : "") + "> Art-Net (reception Ethernet)</label>";
+  html += F("</fieldset>");
   html += F("<fieldset><legend>Reseau Ethernet (Art-Net)</legend>");
   html += "<label>Adresse IP<input type='text' name='ip' value='" + cfg.ip.toString() + "'></label>";
   html += "<label>Passerelle<input type='text' name='gw' value='" + cfg.gw.toString() + "'></label>";
@@ -692,7 +851,14 @@ void handleSave() {
     cfg.fanDuty = (uint8_t)v;
   }
   cfg.usbInputEnabled = webServer.hasArg("usbin");
+  cfg.dmx1Enabled = webServer.hasArg("dmx1en");
+  cfg.dmx2Enabled = webServer.hasArg("dmx2en");
+  cfg.artnetEnabled = webServer.hasArg("anen");
   saveConfig();
+  DBG.printf("[WEB] config enregistree : DMX1=%s DMX2=%s ARTNET=%s USB=%s univ1=%u univ2=%u fan=%u\n",
+             onOff(cfg.dmx1Enabled), onOff(cfg.dmx2Enabled), onOff(cfg.artnetEnabled),
+             onOff(cfg.usbInputEnabled), cfg.universe1, cfg.universe2, cfg.fanDuty);
+  applyOutputState();
   applyFanDuty(cfg.fanDuty);
   String page = F("<html><body><h2>Reglages enregistres.</h2><form method='POST' action='/reboot'><button type='submit'>Redemarrer maintenant</button></form><p><a href='/'>Retour</a></p></body></html>");
   webServer.send(200, "text/html", page);
@@ -706,6 +872,7 @@ void handleScanRdm() {
 // Reboot
 void handleReboot() {
   logReq("POST");
+  DBG.println(F("[WEB] redemarrage demande"));
   webServer.send(200, "text/html", "<html><body>Redemarrage...</body></html>");
   delay(300);
   ESP.restart();
