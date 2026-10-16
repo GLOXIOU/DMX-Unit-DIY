@@ -31,7 +31,6 @@
 #define PORTAL_ONLY_TEST 0
 #define FORCE_AP_MODE    1
 #define DEBUG_ON_USB     1
-#define DMX_SELFTEST     1
 
 #if PORTAL_ONLY_TEST || DEBUG_ON_USB
   #define DBG Serial
@@ -91,6 +90,7 @@ struct DmxUnitConfig {
   String shortName;
   String longName;
   uint8_t fanDuty;
+  bool fanEnabled;
   bool usbInputEnabled;
   bool dmx1Enabled;
   bool dmx2Enabled;
@@ -137,11 +137,7 @@ bool isUsbLive() {
 
 const char *dmxSourceName(int port) {
   if (port == 1 && isUsbLive()) return "USB";
-#if DMX_SELFTEST
-  return "TEST";
-#else
   return "ARTNET";
-#endif
 }
 
 // DMX
@@ -188,6 +184,7 @@ void handleRoot();
 void handleSave();
 void handleScanRdm();
 void handleReboot();
+void handleFanToggle();
 void handleNotFound();
 void logReq(const char *tag);
 void setupWifiEvents();
@@ -219,8 +216,8 @@ void setup() {
              onOff(cfg.artnetEnabled), onOff(cfg.usbInputEnabled));
   DBG.printf("Config : univers1=%u univers2=%u IP=%s\n",
              cfg.universe1, cfg.universe2, cfg.ip.toString().c_str());
-  DBG.printf("Options : SELFTEST=%d DEBUG_ON_USB=%d FORCE_AP=%d\n",
-             DMX_SELFTEST, DEBUG_ON_USB, FORCE_AP_MODE);
+  DBG.printf("Options : DEBUG_ON_USB=%d FORCE_AP=%d\n",
+             DEBUG_ON_USB, FORCE_AP_MODE);
 
 #if PORTAL_ONLY_TEST
   DBG.println(F("MODE TEST : DMX / Ethernet / Art-Net / USB desactives"));
@@ -289,18 +286,6 @@ void loop() {
     memcpy(dmxData1, dmxUsbData, 513);
   }
 
-#if DMX_SELFTEST
-  if (!usbLive) {
-    // generateur de test : rampe 0-255-0 sur les canaux 1 a 4 des 2 sorties
-    uint16_t t = (millis() / 10) % 512;
-    uint8_t v = t < 256 ? t : 511 - t;
-    for (int i = 1; i <= 4; i++) {
-      dmxData1[i] = v;
-      dmxData2[i] = v;
-    }
-  }
-#endif
-
   // Emission DMX periodique
   unsigned long now = millis();
   if (now - lastDmxSendMs >= DMX_REFRESH_MS) {
@@ -323,6 +308,7 @@ void loadConfig() {
   cfg.shortName = prefs.getString("sname", "DMX-Unit-DIY");
   cfg.longName  = prefs.getString("lname", "DMX-Unit-DIY - Art-Net Node");
   cfg.fanDuty = prefs.getUChar("fanduty", 180);
+  cfg.fanEnabled = prefs.getBool("fanen", true);
   cfg.usbInputEnabled = prefs.getBool("usbin", true);
   cfg.dmx1Enabled = prefs.getBool("dmx1en", true);
   cfg.dmx2Enabled = prefs.getBool("dmx2en", true);
@@ -342,6 +328,7 @@ void saveConfig() {
   prefs.putString("sname", cfg.shortName);
   prefs.putString("lname", cfg.longName);
   prefs.putUChar("fanduty", cfg.fanDuty);
+  prefs.putBool("fanen", cfg.fanEnabled);
   prefs.putBool("usbin", cfg.usbInputEnabled);
   prefs.putBool("dmx1en", cfg.dmx1Enabled);
   prefs.putBool("dmx2en", cfg.dmx2Enabled);
@@ -356,13 +343,16 @@ IPAddress strToIp(const String &s, IPAddress fallback) {
 }
 
 void setupFan() {
-  ledcAttach(FAN_PIN, FAN_PWM_FREQ, FAN_PWM_RES);
+  bool ok = ledcAttach(FAN_PIN, FAN_PWM_FREQ, FAN_PWM_RES);
+  DBG.printf("[FAN] ledcAttach pin %d = %s\n", FAN_PIN, ok ? "OK" : "ECHEC (PWM non configure)");
   applyFanDuty(cfg.fanDuty);
 }
 
 void applyFanDuty(uint8_t duty) {
-  ledcWrite(FAN_PIN, duty);
-  DBG.printf("[FAN] vitesse = %u/255 (pin %d)\n", duty, FAN_PIN);
+  uint8_t out = cfg.fanEnabled ? duty : 0;
+  ledcWrite(FAN_PIN, out);
+  DBG.printf("[FAN] %s, vitesse appliquee = %u/255 (reglage %u, pin %d)\n",
+             onOff(cfg.fanEnabled), out, duty, FAN_PIN);
 }
 
 // Series port for DMX
@@ -744,6 +734,7 @@ void setupWifiPortal() {
   webServer.on("/save", HTTP_POST, handleSave);
   webServer.on("/scan", HTTP_GET, handleScanRdm);
   webServer.on("/reboot", HTTP_POST, handleReboot);
+  webServer.on("/fan", HTTP_POST, handleFanToggle);
   webServer.onNotFound(handleNotFound);
   webServer.begin();
   DBG.println(F("Serveur Web demarre !"));
@@ -792,6 +783,7 @@ void handleRoot() {
   html += "<li>Sortie DMX 1 : " + String(onOff(cfg.dmx1Enabled)) + " - source " + dmxSourceName(1) + "</li>";
   html += "<li>Sortie DMX 2 : " + String(onOff(cfg.dmx2Enabled)) + " - source " + dmxSourceName(2) + "</li>";
   html += "<li>Art-Net : " + String(onOff(cfg.artnetEnabled)) + "</li>";
+  html += "<li>Ventilateur : " + String(onOff(cfg.fanEnabled)) + " (reglage " + String(cfg.fanDuty) + "/255)</li>";
   html += "</ul>";
   html += "<form method='POST' action='/save'>";
   html += F("<fieldset><legend>Activation</legend>");
@@ -816,6 +808,7 @@ void handleRoot() {
   html += F("</fieldset>");
   html += F("<fieldset><legend>Ventilateur</legend>");
   html += "<label>Vitesse (0-255)<input type='number' name='fanduty' min='0' max='255' value='" + String(cfg.fanDuty) + "'></label>";
+  html += "<button type='submit' formaction='/fan'>" + String(cfg.fanEnabled ? "Desactiver le ventilateur" : "Activer le ventilateur") + "</button>";
   html += F("</fieldset>");
   html += F("<fieldset><legend>Entree DMX/USB</legend>");
   html += "<label><input type='checkbox' name='usbin' " + String(cfg.usbInputEnabled ? "checked" : "") + "> Activer l'entree USB (mode Enttec-like) sur la sortie 1</label>";
@@ -862,6 +855,15 @@ void handleSave() {
   applyFanDuty(cfg.fanDuty);
   String page = F("<html><body><h2>Reglages enregistres.</h2><form method='POST' action='/reboot'><button type='submit'>Redemarrer maintenant</button></form><p><a href='/'>Retour</a></p></body></html>");
   webServer.send(200, "text/html", page);
+}
+
+void handleFanToggle() {
+  logReq("POST");
+  cfg.fanEnabled = !cfg.fanEnabled;
+  saveConfig();
+  applyFanDuty(cfg.fanDuty);
+  webServer.sendHeader("Location", "/", true);
+  webServer.send(303, "text/plain", "");
 }
 
 void handleScanRdm() {
