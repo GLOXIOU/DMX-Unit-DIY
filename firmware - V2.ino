@@ -116,6 +116,9 @@ unsigned long artnetDmxCount1 = 0;
 unsigned long artnetDmxCount2 = 0;
 unsigned long artnetIgnored = 0;
 unsigned long usbPacketCount = 0;
+unsigned long wifiPktCount = 0;
+uint16_t lastUniverseSeen = 0xFFFF;
+volatile uint8_t testMode = 0;
 bool usbWasLive = false;
 bool artnetSeen1 = false;
 bool artnetSeen2 = false;
@@ -189,6 +192,10 @@ void handleSave();
 void handleScanRdm();
 void handleReboot();
 void handleFanToggle();
+void handleTestToggle(uint8_t mode);
+void handleTestDmx();
+void handleTestArtnet();
+void injectTestArtnet(uint16_t universe, uint8_t value);
 void handleNotFound();
 void logReq(const char *tag);
 void setupWifiEvents();
@@ -290,6 +297,24 @@ void loop() {
   }
   if (usbLive) {
     memcpy(dmxData1, dmxUsbData, 513);
+  }
+
+  if (testMode != 0) {
+    uint16_t t = (millis() / 10) % 512;
+    uint8_t v = t < 256 ? t : 511 - t;
+    if (testMode == 1) {
+      for (int i = 1; i <= 4; i++) {
+        dmxData1[i] = v;
+        dmxData2[i] = v;
+      }
+    } else {
+      static unsigned long lastTestArtnet = 0;
+      if (millis() - lastTestArtnet >= 25) {
+        lastTestArtnet = millis();
+        injectTestArtnet(cfg.universe1, v);
+        injectTestArtnet(cfg.universe2, v);
+      }
+    }
   }
 
   // Emission DMX periodique
@@ -481,6 +506,7 @@ void pollWifiArtnet() {
   for (int i = 0; i < 8; i++) {
     int packetSize = wifiUdp.parsePacket();
     if (packetSize <= 0) return;
+    wifiPktCount++;
     if (!cfg.artnetEnabled) {
       artnetIgnored++;
       wifiUdp.flush();
@@ -513,6 +539,7 @@ void handleArtnetPacket(uint8_t *buf, int len) {
   uint8_t subUni = buf[14];
   uint8_t net    = buf[15] & 0x7F;
   uint16_t universe = (net << 8) | subUni;
+  lastUniverseSeen = universe;
   uint16_t dmxLen = (buf[16] << 8) | buf[17];
   if (dmxLen > 512) dmxLen = 512;
   if (len < ARTNET_HEADER_SZ + dmxLen) return;
@@ -764,6 +791,8 @@ void setupWifiPortal() {
   webServer.on("/scan", HTTP_GET, handleScanRdm);
   webServer.on("/reboot", HTTP_POST, handleReboot);
   webServer.on("/fan", HTTP_POST, handleFanToggle);
+  webServer.on("/test_dmx", HTTP_POST, handleTestDmx);
+  webServer.on("/test_artnet", HTTP_POST, handleTestArtnet);
   webServer.onNotFound(handleNotFound);
   webServer.begin();
   DBG.println(F("Serveur Web demarre !"));
@@ -813,6 +842,9 @@ void handleRoot() {
   html += "<li>Sortie DMX 2 : " + String(onOff(cfg.dmx2Enabled)) + " - source " + dmxSourceName(2) + "</li>";
   html += "<li>Art-Net : " + String(onOff(cfg.artnetEnabled)) + "</li>";
   html += "<li>Ventilateur : " + String(onOff(cfg.fanEnabled)) + " (reglage " + String(cfg.fanDuty) + "/255)</li>";
+  html += "<li>Paquets Wi-Fi recus : " + String(wifiPktCount) + " | ArtDMX sortie 1 : " + String(artnetDmxCount1) + " | sortie 2 : " + String(artnetDmxCount2) + " | ignores : " + String(artnetIgnored) + "</li>";
+  html += "<li>Dernier univers Art-Net recu : " + (lastUniverseSeen == 0xFFFF ? String("aucun") : String(lastUniverseSeen)) + " (attendu " + String(cfg.universe1) + " ou " + String(cfg.universe2) + ")</li>";
+  html += "<li>Trames DMX envoyees : sortie 1 = " + String(dmxFrames1) + ", sortie 2 = " + String(dmxFrames2) + " | canaux 1-4 sortie 1 = " + String(dmxData1[1]) + "," + String(dmxData1[2]) + "," + String(dmxData1[3]) + "," + String(dmxData1[4]) + "</li>";
   html += "</ul>";
   html += "<form method='POST' action='/save'>";
   html += F("<fieldset><legend>Activation</legend>");
@@ -843,6 +875,10 @@ void handleRoot() {
   html += "<label><input type='checkbox' name='usbin' " + String(cfg.usbInputEnabled ? "checked" : "") + "> Activer l'entree USB (mode Enttec-like) sur la sortie 1</label>";
   html += F("</fieldset>");
   html += F("<button type='submit'>Enregistrer</button></form>");
+  html += F("<h2>Tests</h2>");
+  html += "<p>Test en cours : " + String(testMode == 1 ? "DMX direct" : (testMode == 2 ? "Art-Net interne" : "aucun")) + " (rampe 0-255-0 sur les canaux 1 a 4)</p>";
+  html += "<form method='POST' action='/test_dmx'><button type='submit'>" + String(testMode == 1 ? "Arreter le test DMX" : "Lancer le test DMX") + "</button></form>";
+  html += "<form method='POST' action='/test_artnet'><button type='submit'>" + String(testMode == 2 ? "Arreter le test Art-Net" : "Lancer le test Art-Net") + "</button></form>";
   html += F("<h2>RDM</h2>");
   html += "<h3>Sortie 1 (univers " + String(cfg.universe1) + ")</h3>";
   html += "<form method='GET' action='/scan'><input type='hidden' name='port' value='1'><button type='submit'>Scanner</button></form>";
@@ -893,6 +929,47 @@ void handleFanToggle() {
   applyFanDuty(cfg.fanDuty);
   webServer.sendHeader("Location", "/", true);
   webServer.send(303, "text/plain", "");
+}
+
+void injectTestArtnet(uint16_t universe, uint8_t value) {
+  if (!cfg.artnetEnabled) {
+    artnetIgnored++;
+    return;
+  }
+  static uint8_t pkt[ARTNET_HEADER_SZ + 512];
+  memset(pkt, 0, sizeof(pkt));
+  memcpy(pkt, ARTNET_ID, 8);
+  pkt[8] = ARTNET_OP_DMX & 0xFF;
+  pkt[9] = ARTNET_OP_DMX >> 8;
+  pkt[11] = 14;
+  pkt[14] = universe & 0xFF;
+  pkt[15] = (universe >> 8) & 0x7F;
+  pkt[16] = 512 >> 8;
+  pkt[17] = 512 & 0xFF;
+  for (int i = 0; i < 4; i++) pkt[ARTNET_HEADER_SZ + i] = value;
+  handleArtnetPacket(pkt, sizeof(pkt));
+}
+
+void handleTestToggle(uint8_t mode) {
+  logReq("POST");
+  testMode = (testMode == mode) ? 0 : mode;
+  if (testMode == 0) {
+    for (int i = 1; i <= 4; i++) {
+      dmxData1[i] = 0;
+      dmxData2[i] = 0;
+    }
+  }
+  DBG.printf("[TEST] mode = %u (0=aucun 1=DMX 2=Art-Net)\n", (unsigned)testMode);
+  webServer.sendHeader("Location", "/", true);
+  webServer.send(303, "text/plain", "");
+}
+
+void handleTestDmx() {
+  handleTestToggle(1);
+}
+
+void handleTestArtnet() {
+  handleTestToggle(2);
 }
 
 void handleScanRdm() {
