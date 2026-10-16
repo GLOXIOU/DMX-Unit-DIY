@@ -2,6 +2,7 @@
 #include <Ethernet.h>
 #include <EthernetUdp.h>
 #include <WiFi.h>
+#include <WiFiUdp.h>
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <Preferences.h>
@@ -61,6 +62,7 @@ IPAddress DEFAULT_GW(192, 168, 1, 1);
 IPAddress DEFAULT_SN(255, 255, 255, 0);
 
 EthernetUDP artnetUdp;
+WiFiUDP wifiUdp;
 uint8_t artnetBuffer[ARTNET_MAX_SIZE];
 uint8_t pollReplyBuf[ARTPOLL_REPLY_SIZE];
 
@@ -171,6 +173,8 @@ void sendDmx();
 void setupEthernet();
 void setupArtnet();
 void pollArtnet();
+void setupWifiArtnet();
+void pollWifiArtnet();
 void handleArtnetPacket(uint8_t *buf, int len);
 IPAddress calcBroadcastAddress(IPAddress ip, IPAddress sn);
 void sendArtPollReply(IPAddress dest);
@@ -236,6 +240,7 @@ void setup() {
 
 #if !PORTAL_ONLY_TEST
   setupUsbDmx();
+  setupWifiArtnet();
   xTaskCreatePinnedToCore(webTask, "web", 8192, NULL, 1, NULL, 0);
 #endif
   DBG.println(F("setup() termine"));
@@ -275,6 +280,7 @@ void loop() {
     Ethernet.maintain();
     pollArtnet();
   }
+  pollWifiArtnet();
   pollUsbDmx();
 
   bool usbLive = isUsbLive();
@@ -463,6 +469,29 @@ void pollArtnet() {
   if (packetSize > ARTNET_MAX_SIZE) packetSize = ARTNET_MAX_SIZE;
   artnetUdp.read(artnetBuffer, packetSize);
   handleArtnetPacket(artnetBuffer, packetSize);
+}
+
+void setupWifiArtnet() {
+  WiFi.setSleep(false);
+  wifiUdp.begin(ARTNET_PORT);
+  DBG.printf("[ARTNET] ecoute Wi-Fi UDP %d\n", ARTNET_PORT);
+}
+
+void pollWifiArtnet() {
+  for (int i = 0; i < 8; i++) {
+    int packetSize = wifiUdp.parsePacket();
+    if (packetSize <= 0) return;
+    if (!cfg.artnetEnabled) {
+      artnetIgnored++;
+      wifiUdp.flush();
+      continue;
+    }
+    if (packetSize > ARTNET_MAX_SIZE) packetSize = ARTNET_MAX_SIZE;
+    int n = wifiUdp.read(artnetBuffer, packetSize);
+    if (n < 10 || memcmp(artnetBuffer, ARTNET_ID, 8) != 0) continue;
+    uint16_t opcode = artnetBuffer[8] | (artnetBuffer[9] << 8);
+    if (opcode == ARTNET_OP_DMX) handleArtnetPacket(artnetBuffer, n);
+  }
 }
 
 void handleArtnetPacket(uint8_t *buf, int len) {
