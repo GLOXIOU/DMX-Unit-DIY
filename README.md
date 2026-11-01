@@ -136,6 +136,13 @@ Please note that the unit cannot control lights in standalone mode, it is design
 
 ---
 
+## Firmware
+
+You can check the firmware in [this](firmware) folder.
+The final and working version is the [V2](firmware/firmware%20-%20V2.ino) file.
+
+---
+
 ## Componments and enclosure
 
 There is no PCB in this project, beacause it's not required. Here is all the componments include:
@@ -173,6 +180,16 @@ This does not include assembly, enclosure parts or future design changes, and pr
 The development process is documented in [JOURNAL.md](JOURNAL.md)
 
 It includes in-depth design, configuration, part of the code, enclosure design, BOM creation and the problems encountered during development.
+
+---
+
+## Result
+
+When you finish building the project, you will have a beautifull box working like that:
+
+[Video](https://youtube.com/shorts/ppTJHls3vfQ?is=uinX23R1A0HXdadU)
+
+![Box](images/img-21.png)
 
 ---
 
