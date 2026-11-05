@@ -426,3 +426,35 @@ I need to put a picture in the journal day, so here it is, a screenshot of the R
 ![README](images/img-20.png)
 
 **Total time spent: 3 hours**
+
+# Day 8: Tiny version
+
+Hey !
+
+So today I wand to make a tiny version of the box, with just the 2 outputs, not the Ethernet, not the fan. I will do it even if the project has already been accepted, and it's why I will not much argue and detail on what I do.
+
+Most of the part is just on the 3D files...
+
+So I created a completly new box, here it is:
+
+![image 22](images/img-22.png)
+
+![image 23](images/img-23.png)
+
+That you can dowload in [this](3D-files/tiny-version/) folder if you want. I also put the new BOM with just the needed componments here:
+
+| Component | Quantity | Price |
+| --- | ---: | ---: |
+| [MAX485 RS-485 Module](https://fr.aliexpress.com/item/1005008477779481.html?spm=a2g0o.productlist.main.39.61a4672cybk6KC&algo_pvid=28383e4a-b567-4516-a6ae-09f1f8b8f8d6&algo_exp_id=28383e4a-b567-4516-a6ae-09f1f8b8f8d6-38&pdp_ext_f=%7B%22order%22%3A%2291%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21EUR%210.86%210.86%21%21%210.98%210.98%21%40210381f017891982833397272e0cf4%2112000045321729373%21sea%21FR%218054027548%21X%211%210%21n_tag%3A-29919%3Bd%3A8484f755%3Bm03_new_user%3A-29895&curPageLogUid=GAJrKxNpKqLO&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A1005008477779481%7C_p_origin_prod%3A) | 2 | 2x$1 |
+| [ESP32-S3](https://fr.aliexpress.com/item/1005008809316571.html) | 1 | $3.95 |
+| [XLR 3-Pin Panel Mount Female](https://fr.aliexpress.com/item/1005008919369057.html) | 2 | $4.88 |
+| [Dupont Cables](https://www.aliexpress.com/ssr/300000512/BundleDealsDutyCovered) | 1 kit | $2.48 |
+| **Total** | | **$13.31** |
+
+So basecly, it's much cheaper, and easyer, and it use the same firmware, with some line deleted, that you can check on the [firmware](firmware/firmware%20-%20Tiny.ino) folder.
+
+I remove the screws and insert because now you can just clip the cover on the actual box.
+
+Afetr that, I updated the readme with this new version, and it's all for today !
+
+**Total time spent: 5 hours**

@@ -299,10 +299,20 @@ void loop() {
     memcpy(dmxData1, dmxUsbData, 513);
   }
 
-  if (testMode != 0) {
+  uint8_t tm = testMode;
+  static uint8_t lastTm = 0;
+  if (tm != lastTm) {
+    for (int i = 1; i <= 4; i++) {
+      dmxData1[i] = 0;
+      dmxData2[i] = 0;
+    }
+    lastTm = tm;
+  }
+
+  if (tm != 0) {
     uint16_t t = (millis() / 10) % 512;
     uint8_t v = t < 256 ? t : 511 - t;
-    if (testMode == 1) {
+    if (tm == 1) {
       for (int i = 1; i <= 4; i++) {
         dmxData1[i] = v;
         dmxData2[i] = v;
@@ -953,12 +963,6 @@ void injectTestArtnet(uint16_t universe, uint8_t value) {
 void handleTestToggle(uint8_t mode) {
   logReq("POST");
   testMode = (testMode == mode) ? 0 : mode;
-  if (testMode == 0) {
-    for (int i = 1; i <= 4; i++) {
-      dmxData1[i] = 0;
-      dmxData2[i] = 0;
-    }
-  }
   DBG.printf("[TEST] mode = %u (0=aucun 1=DMX 2=Art-Net)\n", (unsigned)testMode);
   webServer.sendHeader("Location", "/", true);
   webServer.send(303, "text/plain", "");

@@ -168,6 +168,34 @@ Assembly file: [Unite DMX - Assembly.step](3D-files/assembly/Unite%20DMX%20-%20A
 
 ---
 
+## Tiny version
+
+So after the submit, I created a smaller version, that is not count in the funding.
+
+Basecly, it's a simplet version, much smaller, with just 2 DMX output and that's it. No Ethernet, no fan, no screws. I did it because a friend who has seen the projetc ask me about it.
+
+You can check the firmware for this version [here](firmware/firmware%20-%20Tiny.ino), but the V2 one actually also work on that.
+
+And most importantly, you check the 3D-files of the tiny version [here](3D-files/tiny-version/)
+
+Here's a look at what it is:
+
+![image 22](images/img-22.png)
+
+![image 23](images/img-23.png)
+
+And here's the BOM without the full version componments:
+
+| Component | Quantity | Price |
+| --- | ---: | ---: |
+| [MAX485 RS-485 Module](https://fr.aliexpress.com/item/1005008477779481.html?spm=a2g0o.productlist.main.39.61a4672cybk6KC&algo_pvid=28383e4a-b567-4516-a6ae-09f1f8b8f8d6&algo_exp_id=28383e4a-b567-4516-a6ae-09f1f8b8f8d6-38&pdp_ext_f=%7B%22order%22%3A%2291%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21EUR%210.86%210.86%21%21%210.98%210.98%21%40210381f017891982833397272e0cf4%2112000045321729373%21sea%21FR%218054027548%21X%211%210%21n_tag%3A-29919%3Bd%3A8484f755%3Bm03_new_user%3A-29895&curPageLogUid=GAJrKxNpKqLO&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A1005008477779481%7C_p_origin_prod%3A) | 2 | 2x$1 |
+| [ESP32-S3](https://fr.aliexpress.com/item/1005008809316571.html) | 1 | $3.95 |
+| [XLR 3-Pin Panel Mount Female](https://fr.aliexpress.com/item/1005008919369057.html) | 2 | $4.88 |
+| [Dupont Cables](https://www.aliexpress.com/ssr/300000512/BundleDealsDutyCovered) | 1 kit | $2.48 |
+| **Total** | | **$13.31** |
+
+---
+
 ## Estimate cost
 
 The current estimate is $29,33 of components.
